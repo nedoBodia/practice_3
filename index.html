@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вхід</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1f2933;
+    }
+    .card {
+      width: 100%;
+      max-width: 400px;
+      margin: 16px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .08);
+    }
+    h1 { margin: 0 0 20px; font-size: 1.5rem; text-align: center; }
+    .field { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 4px; font-size: .9rem; font-weight: 600; }
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 2px solid #cbd2d9;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus { border-color: #2563eb; }
+    input.valid { border-color: #16a34a; }
+    input.invalid { border-color: #dc2626; }
+    .error {
+      min-height: 1.1em;
+      margin-top: 4px;
+      font-size: .82rem;
+      color: #dc2626;
+    }
+    .show-pass { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-bottom: 18px; }
+    .show-pass input { width: 16px; height: 16px; }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: #2563eb;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Вхід</h1>
+    <form id="loginForm" novalidate>
+
+      <div class="field">
+        <label for="firstName">Ім'я</label>
+        <input type="text" id="firstName" name="firstName" autocomplete="given-name">
+        <div class="error" id="firstName-error"></div>
+      </div>
+
+      <div class="field">
+        <label for="lastName">Прізвище</label>
+        <input type="text" id="lastName" name="lastName" autocomplete="family-name">
+        <div class="error" id="lastName-error"></div>
+      </div>
+
+      <div class="field">
+        <label for="email">Електронна пошта</label>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="example@example.com">
+        <div class="error" id="email-error"></div>
+      </div>
+
+      <div class="field">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" autocomplete="new-password">
+        <div class="error" id="password-error"></div>
+      </div>
+
+      <label class="show-pass" for="showPassword">
+        <input type="checkbox" id="showPassword">
+        Показати пароль
+      </label>
+
+      <button type="submit" id="submitBtn" disabled>Надіслати</button>
+    </form>
+  </div>
+
+  <script>
+    const LETTERS = "A-Za-zА-Яа-яІіЇїЄєҐґ";
+    const onlyLetters = new RegExp("^[" + LETTERS + "]+$");
+    const upperFirst = new RegExp("^[A-ZА-ЯІЇЄҐ]");
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    // Кожен валідатор повертає текст помилки або "" якщо все гаразд
+    function validateName(value) {
+      if (!value.trim()) return "Поле обов'язкове для заповнення";
+      if (!onlyLetters.test(value)) return "Допускаються лише українські чи англійські літери";
+      if (!upperFirst.test(value)) return "Має починатися з великої літери";
+      return "";
+    }
+
+    function validateEmail(value) {
+      if (!value.trim()) return "Поле обов'язкове для заповнення";
+      if (!emailRe.test(value)) return "Невірний формат e-mail";
+      return "";
+    }
+
+    function validatePassword(value) {
+      if (!value) return "Поле обов'язкове для заповнення";
+      if (value.length < 8) return "Пароль має містити мінімум 8 символів";
+      if (!/[A-ZА-ЯІЇЄҐ]/.test(value)) return "Пароль має містити хоча б одну велику літеру";
+      if (!/[a-zа-яіїєґ]/.test(value)) return "Пароль має містити хоча б одну малу літеру";
+      if (!/\d/.test(value)) return "Пароль має містити хоча б одну цифру";
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(value))
+        return "Пароль має містити хоча б один спеціальний символ (наприклад, !@#$%^&*)";
+      return "";
+    }
+
+    const fields = {
+      firstName: { el: document.getElementById("firstName"), validate: validateName },
+      lastName:  { el: document.getElementById("lastName"),  validate: validateName },
+      email:     { el: document.getElementById("email"),     validate: validateEmail },
+      password:  { el: document.getElementById("password"),  validate: validatePassword }
+    };
+
+    const form = document.getElementById("loginForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const showPassword = document.getElementById("showPassword");
+
+    // Перевіряє одне поле, оновлює класи й повідомлення. Повертає true, якщо поле валідне
+    function checkField(name, showErrors = true) {
+      const { el, validate } = fields[name];
+      const message = validate(el.value);
+      if (showErrors) {
+        el.classList.toggle("valid", !message);
+        el.classList.toggle("invalid", !!message);
+        document.getElementById(name + "-error").textContent = message;
+      }
+      return !message;
+    }
+
+    function updateButton() {
+      const allValid = Object.keys(fields).every(n => !fields[n].validate(fields[n].el.value));
+      submitBtn.disabled = !allValid;
+    }
+
+    // Жива валідація
+    Object.keys(fields).forEach(name => {
+      fields[name].el.addEventListener("input", () => {
+        checkField(name);
+        updateButton();
+      });
+    });
+
+    // Показати / сховати пароль
+    showPassword.addEventListener("change", () => {
+      fields.password.el.type = showPassword.checked ? "text" : "password";
+    });
+
+    // Відправка форми
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const results = Object.keys(fields).map(n => checkField(n));
+      if (!results.every(Boolean)) return;
+
+      const data = {
+        firstName: fields.firstName.el.value.trim(),
+        lastName: fields.lastName.el.value.trim(),
+        email: fields.email.el.value.trim(),
+        password: fields.password.el.value
+      };
+      console.log("Дані форми:", data);
+      alert(
+        "Дані успішно надіслано!\n\n" +
+        "Ім'я: " + data.firstName + "\n" +
+        "Прізвище: " + data.lastName + "\n" +
+        "E-mail: " + data.email
+      );
+    });
+  </script>
+</body>
+</html>
